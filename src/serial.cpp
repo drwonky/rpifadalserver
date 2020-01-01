@@ -58,7 +58,7 @@ speed_t Serial::ParseBaud(std::string baud)
 	}
 }
 
-bool Serial::GetMyTTY()
+bool Serial::GetTTY()
 {
 	if (!isatty(0)) {
 		last_errno_ = errno;
@@ -83,7 +83,7 @@ bool Serial::GetMyTTY()
 bool Serial::Open(std::string path, speed_t baud, int data_bits, Parity parity, int stop_bits, bool xon_xoff)
 {
 	if (path.empty()) {
-		if (!GetMyTTY())
+		if (!GetTTY())
 			return false;
 
 		fd_ = ::open(tty_name_.c_str(), O_RDWR | O_NOCTTY );
@@ -216,7 +216,6 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 	char *p = gbuf_+sizeof(gbuf_);
 
 	setg(gbuf_,p,p);
-	setp(pbuf_, pbuf_ + sizeof(pbuf_));
 
 	return true;
 }
@@ -229,17 +228,30 @@ std::streambuf::int_type Serial::underflow()
 
 	size_t buflen = gbuf_+sizeof(gbuf_)-eback();
 
-	ssize_t res = ::read(fd_, eback(), buflen);
+	ssize_t res = ::read(fd_, gbuf_, buflen);
 
-	setg(eback(),eback(),eback() + res);
+	if (res == -1) {
+		last_errno_ = errno;
+		return std::streambuf::traits_type::eof();
+	}
 
+	setg(gbuf_,gbuf_,gbuf_ + res);
+
+//	std::cerr << "underflow (" << (int)*gptr()<<") " << gptr() << std::endl;
 	return std::streambuf::traits_type::to_int_type(*gptr());
 }
 
 std::streambuf::int_type Serial::overflow(std::streambuf::int_type c)
 {
+//	std::cerr << "overflow (" << c << ") "<< (char)c << std::endl;
+
 	if (c != std::streambuf::traits_type::eof()) {
-		::write(fd_,&c,1);
+		if (::write(fd_,&c,1) == -1) {
+			last_errno_ = errno;
+			return std::streambuf::traits_type::eof();
+		}
+	} else {
+		tcdrain(fd_);
 	}
 
 	return c;
@@ -247,13 +259,9 @@ std::streambuf::int_type Serial::overflow(std::streambuf::int_type c)
 
 int Serial::sync()
 {
-	overflow(EOF);
-	setg(gbuf_, gbuf_ + sizeof(gbuf_), gbuf_ + sizeof(gbuf_));
+	overflow(std::streambuf::traits_type::eof());
 	return 0;
 }
-
-//std::char_traits::int_type Serial::uflow() {}
-
 
 void Serial::Close()
 {

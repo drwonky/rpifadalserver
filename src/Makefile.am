@@ -1,3 +1,4 @@
-bin_PROGRAMS=a.out
-a_out_SOURCES=rpifadalserver.cpp
+bin_PROGRAMS=rpifadalserver testrpifadalserver
+rpifadalserver_SOURCES=rpifadalserver.cpp serial.cpp
+testrpifadalserver_SOURCES=testrpifadalserver.cpp serial.cpp
 

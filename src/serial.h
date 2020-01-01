@@ -37,7 +37,7 @@ public:
 	bool SetDataBits(int bits);
 	bool SetParity(int parity);
 	bool SetStopBits(int bits);
-	bool GetMyTTY();
+	bool GetTTY();
 	int sync();
 
 private:
@@ -45,7 +45,6 @@ private:
 
 protected:
 	std::streambuf::int_type underflow();
-//	std::char_traits::int_type uflow();
 	std::streambuf::int_type overflow(std::streambuf::int_type c);
 
 private:
@@ -59,8 +58,6 @@ private:
 	Parity			parity_;
 	int				last_errno_;
 	char			gbuf_[1024];
-	char			pbuf_[1024];
-
 };
 
 }
