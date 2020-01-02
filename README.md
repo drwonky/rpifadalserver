@@ -28,7 +28,7 @@ If you don't deal with CNC machines often, you wouldn't know that a lot of progr
 
 This repo contains a file server written in C++ to interface with the hardware serial port of a Raspberry Pi.  You connect the serial port to the Fadal and it offers up filesystm access to a USB key fob plugged into the Raspberry Pi.
 
-Rather than blatantly ripping off the guy to came up with the original embodiment of this concept, my command list is based on Unix commands like ls, rm, and the like.
+Rather than blatantly ripping off the guy who came up with the original embodiment of this concept, my command list is based on Unix commands like ls, rm, and the like.
 
 I tried to pick short and useful mnemonics like how the "sz" command is used for sending a file with zmodem over a terminal from a Unix machine, the "sf" command sends a text file.
 
