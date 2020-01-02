@@ -2,53 +2,58 @@
  ============================================================================
  Name        : rpifadalserver.cpp
  Author      : Perry Harrington
- Version     :
- Copyright   : Your copyright notice
- Description : Hello World in C++,
+ Version     : 0.1a
+ Copyright   : Copyright 2019 Perry Harrington
+ Description : Raspberry Pi based file server for Fadal CNC control
  ============================================================================
  */
 
 #include <iostream>
+#include <algorithm>
 #include "serial.h"
+#include "CommandProcessor.h"
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
 	apsoft::Serial tty;
 
-	cout << "!!!Hello World!!!" << endl; /* prints !!!Hello World!!! */
-
-	cout << "argc " << argc << endl;
 	if (argc > 1) {
 		tty.Open(argv[1]);
 	} else {
 		tty.Open();
 	}
 
-	cout<<"writing"<<endl;
-	tty.write("test\r\n",6);
-	cout<<"operator test output"<<endl;
-	tty << "hello world test\r" << endl;
-	cout << "send tty to cout"<<endl;
-	sleep(5);
-	try {
-		tty << "disconnect test\r"<<endl;
-	} catch (const std::exception& e) {
-		std::cerr << "Caught exception "<< e.what() << endl;
-	}
-	cout << "past the disconnect test"<<endl;
-	cout << "doing input test"<<endl;
 	string input;
-	try {
-	tty >> input;
-	cout << input << endl;
-	} catch (const std::exception& e) {
-		std::cerr << "Caught exception "<< e.what() << endl;
+	string token;
+	string args;
+	size_t pos;
+
+	apsoft::CommandProcessor command(tty);
+
+	tty.setf(ios::left);
+	while(std::getline(tty, input, '+')) {
+		std::transform(input.begin(), input.end(),input.begin(), ::toupper);
+//		cout << "Read command '" << input << "'" << apsoft::Serial::crlf;
+
+		if (input == "EXIT") break;
+
+		pos = input.find_first_of(",");
+
+		if (pos != std::string::npos) {
+			token = input.substr(0,pos);
+			args = input.substr(pos+1,std::string::npos);
+		} else {
+			token = input;
+			args.clear();
+		}
+
+//		cout << "Read token '"<<token<<"'"<< apsoft::Serial::crlf;
+//		cout << "Process" << apsoft::Serial::crlf;
+
+		command.Process(token,args);
+
 	}
-	tty << input << "\r"<< endl;
-	tty.sync();
-	tty << "input was " << input << "\r"<< endl;
-	//tty.GetMyTTY();
 
 	return 0;
 }

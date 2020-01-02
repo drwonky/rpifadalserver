@@ -25,6 +25,7 @@ class Serial : public std::streambuf, public std::iostream
 {
 public:
 	enum Parity { N = 0, E = 1, O = 2 };
+	static const std::string crlf;
 
 public:
 	Serial();

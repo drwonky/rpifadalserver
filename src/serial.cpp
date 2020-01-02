@@ -10,7 +10,9 @@
 
 #include "serial.h"
 
-using namespace apsoft;
+namespace apsoft {
+
+const std::string Serial::crlf = "\r\n";
 
 speed_t Serial::ParseBaud(std::string baud)
 {
@@ -177,10 +179,14 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 	  ICANON  : enable canonical input
 	  disable all echo functionality, and don't send signals to calling program
 	*/
-	 //tio_.c_lflag = ICANON;
-	tio_.c_lflag = 0;
+	tio_.c_lflag = ICANON;
+//	tio_.c_lflag = 0;
+//	tio_.c_lflag = ECHO | ECHONL;
 
 	cfmakeraw(&tio_);
+
+	tio_.c_iflag |= (IXON | ICRNL);
+
 
 	/*
 	  initialize all control characters
@@ -290,4 +296,6 @@ Serial::~Serial()
 		tcsetattr(fd_,TCSANOW,&tio_old_);
 		Close();
 	}
+}
+
 }
