@@ -190,7 +190,7 @@ void CommandProcessor::Command_sf(arglist_t args)
 
 void CommandProcessor::Command_help(arglist_t args)
 {
-	Response("RPI FADAL FILE SERVER V0.1a");
+	Response("RPI FADAL FILE SERVER V0.1A");
 	Response("");
 
 	for(auto a:help_) {
