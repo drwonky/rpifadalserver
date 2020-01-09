@@ -38,7 +38,7 @@ public:
 	};
 	void RegisterCallbacks();
 	arglist_t Split(std::string args);
-	void LogError(std::string text);
+	void Error(std::string text);
 	void Response(std::string text);
 	void Bye();
 	void Command_lv(arglist_t args);

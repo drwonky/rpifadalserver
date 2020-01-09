@@ -24,6 +24,8 @@ int main(int argc, char *argv[]) {
 		tty.Open();
 	}
 
+	tty.SetFlow(true);
+
 	string input;
 	string token;
 	string args;
@@ -32,7 +34,7 @@ int main(int argc, char *argv[]) {
 	apsoft::CommandProcessor command(tty);
 
 	tty.setf(ios::left);
-	while(std::getline(tty, input, '+')) {
+	while(tty.GetLine(tty, input, '+')) {
 		std::transform(input.begin(), input.end(),input.begin(), ::toupper);
 //		cout << "Read command '" << input << "'" << apsoft::Serial::crlf;
 

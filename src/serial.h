@@ -33,16 +33,33 @@ public:
 	bool Open(std::string path = "", speed_t baud = B115200, int data_bits = 8, Parity parity = N, int stop_bits = 1, bool xon_xoff = false);
 	bool Open(int fd, speed_t baud = B115200, int data_bits = 8, Parity parity = N, int stop_bits = 1, bool xon_xoff = false);
 	void Close();
-	bool SetSpeed(std::string baud);
-	bool SetSpeed(speed_t baud);
-	bool SetDataBits(int bits);
-	bool SetParity(int parity);
-	bool SetStopBits(int bits);
+	void  SetSpeed(std::string baud);
+	void  SetSpeed(speed_t baud){
+		baud_ = baud;
+		setTermios();
+	};
+	void  SetDataBits(int data_bits) {
+		data_bits_ = data_bits;
+		setTermios();
+	};
+	void  SetParity(Parity parity) {
+		parity_ = parity;
+		setTermios();
+	};
+	void  SetStopBits(int stop_bits) {
+		stop_bits_ = stop_bits;
+		setTermios();
+	};
+	void SetFlow(bool xon_xoff) {
+		xon_xoff_ = xon_xoff;
+		setTermios();
+	};
 	bool GetTTY();
 	int sync();
+	bool GetLine(std::istream& stream, std::string& string, char delimiter);
 
 private:
-	speed_t ParseBaud(std::string baud);
+	bool setTermios();
 
 protected:
 	std::streambuf::int_type underflow();
@@ -56,6 +73,8 @@ private:
 	speed_t			baud_;
 	int				data_bits_;
 	int				stop_bits_;
+	bool			xon_xoff_;
+	bool			flow_flag_;
 	Parity			parity_;
 	int				last_errno_;
 	char			gbuf_[1024];

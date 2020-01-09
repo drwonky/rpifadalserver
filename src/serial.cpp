@@ -14,50 +14,73 @@ namespace apsoft {
 
 const std::string Serial::crlf = "\r\n";
 
-speed_t Serial::ParseBaud(std::string baud)
+void Serial::SetSpeed(std::string baud)
 {
+	int s;
+
 	switch (stoi(baud)) {
 		case 460800:
-			return B460800;
+			s =  B460800;
+			break;
 		case 230400:
-			return B230400;
+			s =  B230400;
+			break;
 		case 115200:
-			return B115200;
+			s =  B115200;
+			break;
 		case 57600:
-			return B57600;
+			s =  B57600;
+			break;
 		case 38400:
-			return B38400;
+			s =  B38400;
+			break;
 		case 19200:
-			return B19200;
+			s =  B19200;
+			break;
 		case 9600:
-			return B9600;
+			s =  B9600;
+			break;
 		case 4800:
-			return B4800;
+			s =  B4800;
+			break;
 		case 2400:
-			return B2400;
+			s =  B2400;
+			break;
 		case 1800:
-			return B1800;
+			s =  B1800;
+			break;
 		case 1200:
-			return B1200;
+			s =  B1200;
+			break;
 		case 600:
-			return B600;
+			s =  B600;
+			break;
 		case 300:
-			return B300;
+			s =  B300;
+			break;
 		case 200:
-			return B200;
+			s =  B200;
+			break;
 		case 150:
-			return B150;
+			s =  B150;
+			break;
 		case 134:
-			return B134;
+			s =  B134;
+			break;
 		case 110:
-			return B110;
+			s =  B110;
+			break;
 		case 75:
-			return B75;
+			s =  B75;
+			break;
 		case 50:
-			return B50;
+			s =  B50;
+			break;
 		default:
-			return B0;
+			s = B0;
 	}
+
+	SetSpeed(s);
 }
 
 bool Serial::GetTTY()
@@ -103,7 +126,34 @@ bool Serial::Open(std::string path, speed_t baud, int data_bits, Parity parity, 
 
 bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_bits, bool xon_xoff)
 {
-	auto dbToSym = [&] {
+
+	data_bits_ = data_bits;
+	baud_ = baud;
+	parity_ = parity;
+	stop_bits_ = stop_bits;
+	xon_xoff_ = xon_xoff;
+
+	tcgetattr(fd,&tio_old_); /* save current serial port settings */
+	memcpy(&tio_, &tio_old_, sizeof(tio_));
+
+	fd_ = fd;
+
+	setTermios();
+
+	char *p = gbuf_+sizeof(gbuf_);
+
+	// setup buffer, tell it how big it is, and set the current pointer to the end so it knows to fetch data
+	setg(gbuf_,p,p);
+
+	return true;
+}
+
+bool Serial::setTermios()
+{
+
+	if (fd_ == -1) return false;
+
+	auto dbToSym = [] (int data_bits) {
 		switch (data_bits) {
 		default:
 		case 8:
@@ -121,7 +171,7 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 		}
 	};
 
-	auto pbToSym = [&] {
+	auto pbToSym = [] (Parity parity) {
 		switch (parity) {
 		default:
 		case N:
@@ -136,7 +186,7 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 		}
 	};
 
-	auto sbToSym = [&] {
+	auto sbToSym = [] (int stop_bits) {
 		switch (stop_bits) {
 		default:
 		case 1:
@@ -148,9 +198,6 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 		}
 	};
 
-	tcgetattr(fd,&tio_old_); /* save current serial port settings */
-	memcpy(&tio_, &tio_old_, sizeof(tio_));
-
 	/*
 	  BAUDRATE: Set bps rate. You could also use cfsetispeed and cfsetospeed.
 	  CRTSCTS : output hardware flow control (only used if the cable has
@@ -159,34 +206,18 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 	  CLOCAL  : local connection, no modem contol
 	  CREAD   : enable receiving characters
 	*/
-	tio_.c_cflag = baud | dbToSym() | pbToSym() | sbToSym() | CLOCAL | CREAD;
+	tio_.c_cflag = baud_ | dbToSym(data_bits_) | pbToSym(parity_) | sbToSym(stop_bits_) | CLOCAL | CREAD;
 
-	/*
-	  IGNPAR  : ignore bytes with parity errors
-	  ICRNL   : map CR to NL (otherwise a CR input on the other computer
-		    will not terminate input)
-	  otherwise make device raw (no other input processing)
-	*/
-	 //tio_.c_iflag = IGNPAR | IGNBRK;
-	tio_.c_iflag = xon_xoff ? IXON : 0;
 
 	/*
 	 Raw output.
 	*/
 	tio_.c_oflag = 0;
 
-	/*
-	  ICANON  : enable canonical input
-	  disable all echo functionality, and don't send signals to calling program
-	*/
-	tio_.c_lflag = ICANON;
-//	tio_.c_lflag = 0;
-//	tio_.c_lflag = ECHO | ECHONL;
+	// What cfmakeraw does, but gives us control over CSIZE:
 
-	cfmakeraw(&tio_);
-
-	tio_.c_iflag |= (IXON | ICRNL);
-
+    tio_.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+    tio_.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 
 	/*
 	  initialize all control characters
@@ -214,14 +245,8 @@ bool Serial::Open(int fd, speed_t baud, int data_bits, Parity parity, int stop_b
 	/*
 	  now clean the modem line and activate the settings for the port
 	*/
-	tcflush(fd, TCIFLUSH);
-	tcsetattr(fd,TCSANOW,&tio_);
-
-	fd_ = fd;
-
-	char *p = gbuf_+sizeof(gbuf_);
-
-	setg(gbuf_,p,p);
+	tcflush(fd_, TCIFLUSH);
+	tcsetattr(fd_,TCSANOW,&tio_);
 
 	return true;
 }
@@ -234,11 +259,27 @@ std::streambuf::int_type Serial::underflow()
 
 	size_t buflen = gbuf_+sizeof(gbuf_)-eback();
 
+restart:
 	ssize_t res = ::read(fd_, gbuf_, buflen);
+
+//	printf("read 0x%X input res %d\r\n",*gbuf_, res);
 
 	if (res == -1) {
 		last_errno_ = errno;
 		return std::streambuf::traits_type::eof();
+	} else if (res == 1) {
+		if (xon_xoff_) { // Eat and process flow control characters
+			switch (*gbuf_) {
+			case 0x13:
+				flow_flag_=true;
+				return underflow();
+				break;
+			case 0x11:
+				flow_flag_=false;
+				return 0;
+				break;
+			}
+		}
 	}
 
 	setg(gbuf_,gbuf_,gbuf_ + res);
@@ -251,6 +292,10 @@ std::streambuf::int_type Serial::overflow(std::streambuf::int_type c)
 {
 //	std::cerr << "overflow (" << c << ") "<< (char)c << std::endl;
 
+	if (xon_xoff_ == true && flow_flag_ == true) {
+		while(flow_flag_ == true) underflow();
+	}
+
 	if (c != std::streambuf::traits_type::eof()) {
 		if (::write(fd_,&c,1) == -1) {
 			last_errno_ = errno;
@@ -261,6 +306,30 @@ std::streambuf::int_type Serial::overflow(std::streambuf::int_type c)
 	}
 
 	return c;
+}
+
+bool Serial::GetLine(std::istream& stream, std::string& string, char delimiter)
+{
+	int	input;
+
+	string.erase();
+	while(1) {
+		input = stream.get();
+
+//		printf("got 0x%X\n",input);
+
+		if (input == std::istream::traits_type::eof()) return input;
+
+		switch (input) {
+		case '\b':	// handle backspace
+		case '\177':	// handle DEL
+			string.pop_back();
+			break;
+		default:
+			if (input == delimiter) return true;
+			string += input;
+		}
+	}
 }
 
 int Serial::sync()
@@ -287,6 +356,8 @@ std::iostream((std::streambuf *)this)
 	data_bits_ = 8;
 	stop_bits_ = 1;
 	parity_ = N;
+	xon_xoff_=false;
+	flow_flag_ = false;
 }
 
 Serial::~Serial()

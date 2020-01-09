@@ -8,6 +8,7 @@
 #include "CommandProcessor.h"
 #include "serial.h"
 #include <iomanip>
+#include <algorithm>
 
 namespace apsoft
 {
@@ -52,14 +53,18 @@ CommandProcessor::arglist_t CommandProcessor::Split(std::string args)
 	return arglist;
 }
 
-void CommandProcessor::LogError(std::string text)
+void CommandProcessor::Error(std::string text)
 {
+	std::transform(text.begin(), text.end(),text.begin(), ::toupper);
+
 	stream_ << "ERROR: " << text << Serial::crlf;
 }
 
 void CommandProcessor::Response(std::string text)
 {
-	stream_ << std::setw(40) << text << Serial::crlf;
+	std::transform(text.begin(), text.end(),text.begin(), ::toupper);
+//	stream_ << std::setw(40) << text << Serial::crlf;
+	stream_ << text << Serial::crlf;
 }
 
 void CommandProcessor::Bye()
@@ -96,7 +101,7 @@ void CommandProcessor::Command_lv(arglist_t args)
 	} catch (int errnum) {
 		std::string error_text = rpi_.GetError();
 
-		LogError("LISTING VOLUMES: " + error_text);
+		Error(error_text);
 		return;
 	}
 
@@ -110,7 +115,7 @@ void CommandProcessor::Command_lv(arglist_t args)
 void CommandProcessor::Command_op(arglist_t args)
 {
 	if (args.capacity() == 0) {
-		LogError("VOLUME NOT GIVEN");
+		Error("VOLUME NOT GIVEN");
 		Response(help_.at("OP"));
 	}
 
@@ -119,7 +124,7 @@ void CommandProcessor::Command_op(arglist_t args)
 	} catch (int errnum) {
 		std::string error_text = rpi_.GetError();
 
-		LogError("OPENING VOLUME: " + error_text);
+		Error(args[0] + ": " + error_text);
 		return;
 	}
 
@@ -135,7 +140,7 @@ void CommandProcessor::Command_ls(arglist_t args)
 	} catch (int errnum) {
 		std::string error_text = rpi_.GetError();
 
-		LogError("LISTING DIRECTORY: " + error_text);
+		Error(args[0] + ": " + error_text);
 		return;
 	}
 
@@ -180,7 +185,7 @@ void CommandProcessor::Command_sf(arglist_t args)
 	} catch (int errnum) {
 		std::string error_text = rpi_.GetError();
 
-		LogError("SENDING FILE " + args[0] + ":" + error_text);
+		Error(args[0] + ": " + error_text);
 		return;
 	}
 

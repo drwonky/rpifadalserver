@@ -12,6 +12,7 @@
 #include <string.h>
 #include <vector>
 #include <fstream>
+#include <errno.h>
 
 namespace apsoft
 {
@@ -30,11 +31,12 @@ public:
 	dirlist_t GetAvailablePaths(std::string path = mediaPath);
 	dirlist_t GetDirectoryListing(std::string path = "");
 	std::string GetError(void) {
-		std::string err(256,'\0');
+		return strerror(last_errno_);
+/*		std::string err(256,'\0');
 
 		strerror_r(last_errno_,&err[0],err.capacity());
 
-		return err;
+		return err;*/
 	};
 
 
