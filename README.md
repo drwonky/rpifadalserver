@@ -1,6 +1,6 @@
 # Raspberry Pi Fadal File Server
 
-Written by Perry Harrington and Copyrite 2020.  For now the License is GPLv3.
+Written by Perry Harrington and Copyright 2020.  For now the License is GPLv3.
 
 The title pretty much says it all! ;)
 
